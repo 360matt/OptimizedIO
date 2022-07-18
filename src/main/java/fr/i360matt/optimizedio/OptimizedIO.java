@@ -3,6 +3,7 @@ package fr.i360matt.optimizedio;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.util.function.Consumer;
 
 public class OptimizedIO {
 
@@ -17,8 +18,8 @@ public class OptimizedIO {
     /**
      * Permet d'incrémenter la taille de l'array
      */
-    private static void upgradeArray () {
-        Tampon[] newer = new Tampon[store.length+1];
+    private static void upgradeArray (int size) {
+        Tampon[] newer = new Tampon[store.length+size];
         System.arraycopy(store, 0, newer, 0, store.length);
         store = newer;
     }
@@ -37,13 +38,31 @@ public class OptimizedIO {
     }
 
     /**
+     * Permet de créer de nouveaux tampons
+     * @param size le nombre de tampons à créer
+     */
+    public static void createNewsTampons (int size) {
+        if (store == null) {
+            store = new Tampon[size];
+            for (int i = 0; i < size; i++) {
+                store[i] = new Tampon(new byte[SIZE]);
+            }
+        } else {
+            upgradeArray(size);
+            for (int i = 0; i < size; i++) {
+                store[store.length-1-i] = createTamponToLast();
+            }
+        }
+    }
+
+    /**
      * Permet d'ajouter artificiellement un nouveau tampon array.
      * La méthode init() doit avoir été appellée au moins une fois avant.
      * @return le tampon array nouvellement créé
      */
     @NotNull
     public static Tampon createNewTampon () {
-        upgradeArray();
+        upgradeArray(1);
         return createTamponToLast();
     }
 
@@ -60,7 +79,7 @@ public class OptimizedIO {
      * @return le tampon le plus approprié
      */
     @NotNull
-    public static Tampon getTampon () {
+    public synchronized static Tampon getTampon () {
         init();
 
         Tampon candidate = null;
@@ -73,12 +92,16 @@ public class OptimizedIO {
                 break;
         }
 
-
         if (candidate == null || (candidate.getQueue() > 0 && store.length < MAX_TAMPON)) {
-            return createNewTampon();
+            candidate = createNewTampon();
         }
 
         return candidate;
+    }
+
+    public static void syncTampon (@NotNull Consumer<Tampon> consumer) {
+        Tampon tampon = getTampon();
+        tampon.execute(consumer);
     }
 
     /**
@@ -100,7 +123,6 @@ public class OptimizedIO {
             copy(in, out, count, array);
         }
 
-
         tampon.setQueue(tampon.getQueue()-1);
     }
 
@@ -118,14 +140,12 @@ public class OptimizedIO {
      * @throws IOException erreurs IO communes
      */
     public static void copy (@NotNull InputStream in, OutputStream out, long count, byte[] tampon) throws IOException {
-        if (!(in instanceof BufferedInputStream))
+        /* if (!(in instanceof BufferedInputStream))
             in = new BufferedInputStream(in);
         if (!(out instanceof BufferedOutputStream))
-            out = new BufferedOutputStream(out);
+            out = new BufferedOutputStream(out); */
         /*
-         * Il faudra que je fasse des checks plus approndi sur la conversion en Buffered,
-         * D'après certains forums, c'est contre-productif sur de faibles transmissions de données.
-         * Je ferai sûrement un check du seuil minimal avant d'obliger la conversion.
+         * 18/07/2022 : Finalement, utiliser un buffered est inutile, car les fluxs sont déjà bufférés.
          */
 
         int toSend;
