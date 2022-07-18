@@ -42,7 +42,10 @@ public class IOHelper {
     }
 
     public static short readShort (@NotNull byte[] array, int offset) {
-        return (short) ((array[offset] << 8) | array[offset+1]);
+        // not negative byte
+        int b1 = array[offset] & 0xFF;
+        int b2 = array[offset+1] & 0xFF;
+        return (short) ((b1 << 8) | b2);
     }
 
     public static short readShort (byte[] array) {
@@ -58,7 +61,8 @@ public class IOHelper {
     }
 
     public static byte readByte (@NotNull byte[] array, int offset) {
-        return array[offset];
+        // not negative byte
+        return (byte) (array[offset] & 0xFF);
     }
 
     public static byte readByte (byte[] array) {
@@ -143,28 +147,14 @@ public class IOHelper {
     }
 
     public static char readChar (@NotNull byte[] array, int offset) {
-        return (char) readShort(array, offset);
+        // not negative byte
+        int b1 = array[offset] & 0xFF;
+        int b2 = array[offset+1] & 0xFF;
+        return (char) ((b1 << 8) | b2);
     }
 
     public static char readChar (byte[] array) {
         return readChar(array, 0);
-    }
-
-    public static void writeRawString (@NotNull String value, @NotNull byte[] array, int offset) {
-        for (int i = 0; i < value.length(); i++) {
-            writeChar(value.charAt(i), array, offset + (i * 2));
-        }
-    }
-
-    public static void writeRawASCII (@NotNull String value, @NotNull byte[] array, int offset) {
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c < 0x80) {
-                writeByte((byte) c, array, offset + i);
-            } else {
-                writeShort((short) c, array, offset + (i * 2));
-            }
-        }
     }
 
     public static int writeRawUTF8 (@NotNull String value, @NotNull byte[] array, int offset) {
@@ -173,48 +163,24 @@ public class IOHelper {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
             if (c < 0x80) {
-                writeByte((byte) c, array, offset + i);
-                bytes += 1;
+                array[offset + bytes++] = (byte) c;
             } else if (c < 0x800) {
-                writeByte((byte) (0xC0 | (c >> 6)), array, offset + i);
-                writeByte((byte) (0x80 | (c & 0x3F)), array, offset + i + 1);
-                bytes += 2;
+                array[offset + bytes++] = (byte) (0xC0 | (c >> 6));
+                array[offset + bytes++] = (byte) (0x80 | (c & 0x3F));
             } else if (c < 0xD800 || c >= 0xE000) {
-                writeByte((byte) (0xE0 | (c >> 12)), array, offset + i);
-                writeByte((byte) (0x80 | ((c >> 6) & 0x3F)), array, offset + i + 1);
-                writeByte((byte) (0x80 | (c & 0x3F)), array, offset + i + 2);
-                bytes += 3;
+                array[offset + bytes++] = (byte) (0xE0 | (c >> 12));
+                array[offset + bytes++] = (byte) (0x80 | ((c >> 6) & 0x3F));
+                array[offset + bytes++] = (byte) (0x80 | (c & 0x3F));
             } else {
-                i++;
-                writeByte((byte) (0xF0 | (0)), array, offset + i);
-                writeByte((byte) (0x80 | ((c >> 12) & 0x3F)), array, offset + i + 1);
-                writeByte((byte) (0x80 | ((c >> 6) & 0x3F)), array, offset + i + 2);
-                writeByte((byte) (0x80 | (c & 0x3F)), array, offset + i + 3);
-                bytes += 4;
+                char c2 = value.charAt(++i);
+                int codePoint = ((c - 0xD800) << 10) + (c2 - 0xDC00) + 0x10000;
+                array[offset + bytes++] = (byte) (0xF0 | (codePoint >> 18));
+                array[offset + bytes++] = (byte) (0x80 | ((codePoint >> 12) & 0x3F));
+                array[offset + bytes++] = (byte) (0x80 | ((codePoint >> 6) & 0x3F));
+                array[offset + bytes++] = (byte) (0x80 | (codePoint & 0x3F));
             }
         }
         return bytes;
-    }
-
-    public static void writeString (@NotNull String value, @NotNull byte[] array, int offset) {
-        writeInt(value.length(), array, offset);
-        writeRawString(value, array, offset + IOType.INT_SIZE());
-    }
-
-    public static void writeString (@NotNull String value, byte[] array) {
-        writeString(value, array, 0);
-    }
-
-    @NotNull
-    @Contract(value = "_, _, _ -> new", pure = true)
-    public static String readRawString (@NotNull byte[] array, int offset, int length) {
-        return new String(array, offset, length);
-    }
-
-    @NotNull
-    @Contract(value = "_, _, _ -> new", pure = true)
-    public static String readRawASCII (@NotNull byte[] array, int offset, int length) {
-        return new String(array, offset, length, StandardCharsets.US_ASCII);
     }
 
     @NotNull
@@ -222,18 +188,6 @@ public class IOHelper {
     public static String readRawUTF8 (@NotNull byte[] array, int offset, int length) {
         return new String(array, offset, length, StandardCharsets.UTF_8);
     }
-
-    @NotNull
-    public static String readString (@NotNull byte[] array, int offset) {
-        int length = readInt(array, offset);
-        return readRawString(array, offset + IOType.INT_SIZE(), length * 2);
-    }
-
-    @NotNull
-    public static String readString (byte[] array) {
-        return readString(array, 0);
-    }
-
 
     public static void writeBool (boolean value, @NotNull byte[] array, int offset) {
         array[offset] = (byte) (value ? 0x01 : 0x00);
@@ -256,15 +210,6 @@ public class IOHelper {
         System.arraycopy(value, 0, array, offset, value.length);
     }
 
-    public static void writeBytes (@NotNull byte[] value, byte[] array, int offset) {
-        writeInt(value.length, array, offset);
-        writeRawBytes(value, array, offset + IOType.INT_SIZE());
-    }
-
-    public static void writeBytes (@NotNull byte[] value, byte[] array) {
-        writeBytes(value, array, 0);
-    }
-
     public static void readRawBytes (byte[] array, byte[] dest, int offset, int length) {
         System.arraycopy(array, offset, dest, 0, length);
     }
@@ -275,25 +220,5 @@ public class IOHelper {
         readRawBytes(array, dest, offset, length);
         return dest;
     }
-
-    @NotNull
-    public static byte[] readBytes (byte[] array, int offset) {
-        int length = readInt(array, offset);
-        return readRawBytes(array, offset + IOType.INT_SIZE(), length);
-    }
-
-    @NotNull
-    public static byte[] readBytes (byte[] array) {
-        return readBytes(array, 0);
-    }
-
-    public static void readBytes (byte[] array, int offset, @NotNull byte[] result) {
-        System.arraycopy(array, offset, result, 0, result.length);
-    }
-
-    public static void readBytes (byte[] array, byte[] result) {
-        readBytes(array, 0, result);
-    }
-
 
 }

@@ -1,6 +1,5 @@
 package fr.i360matt.optimizedio.utils;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -19,10 +18,11 @@ public class IOStreamHelper {
     }
 
     public static int readInt (@NotNull InputStream in) throws IOException {
-        int b1 = in.read();
-        int b2 = in.read();
-        int b3 = in.read();
-        int b4 = in.read();
+        // not negative
+        byte b1 = (byte) (in.read() & 0xFF);
+        byte b2 = (byte) (in.read() & 0xFF);
+        byte b3 = (byte) (in.read() & 0xFF);
+        byte b4 = (byte) (in.read() & 0xFF);
         return ((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
     }
 
@@ -31,8 +31,8 @@ public class IOStreamHelper {
         out.write((byte) value);
     }
     public static short readShort (@NotNull InputStream in) throws IOException {
-        int b1 = in.read();
-        int b2 = in.read();
+        int b1 = in.read() & 0xFF;
+        int b2 = in.read() & 0xFF;
         return (short) ((b1 << 8) | b2);
     }
 
@@ -41,7 +41,7 @@ public class IOStreamHelper {
     }
 
     public static byte readByte (@NotNull InputStream in) throws IOException {
-        return (byte) in.read();
+        return (byte) (in.read() & 0xFF);
     }
 
     public static void writeLong (long value, @NotNull OutputStream out) throws IOException {
@@ -56,14 +56,14 @@ public class IOStreamHelper {
     }
 
     public static long readLong (@NotNull InputStream in) throws IOException {
-        int b1 = in.read();
-        int b2 = in.read();
-        int b3 = in.read();
-        int b4 = in.read();
-        int b5 = in.read();
-        int b6 = in.read();
-        int b7 = in.read();
-        int b8 = in.read();
+        int b1 = in.read() & 0xFF;
+        int b2 = in.read() & 0xFF;
+        int b3 = in.read() & 0xFF;
+        int b4 = in.read() & 0xFF;
+        int b5 = in.read() & 0xFF;
+        int b6 = in.read() & 0xFF;
+        int b7 = in.read() & 0xFF;
+        int b8 = in.read() & 0xFF;
         return (((long) b1 << 56) | ((long) b2 << 48) | ((long) b3 << 40) | ((long) b4 << 32) | ((long) b5 << 24) | (b6 << 16) | (b7 << 8) | b8);
     }
 
@@ -88,95 +88,15 @@ public class IOStreamHelper {
     }
 
     public static char readChar (@NotNull InputStream in) throws IOException {
-        int b1 = in.read();
-        int b2 = in.read();
+        int b1 = in.read() & 0xFF;
+        int b2 = in.read() & 0xFF;
         return (char) ((b1 << 8) | b2);
-    }
-
-    public static void writeRawString (@NotNull String value, OutputStream out) {
-        for (char c : value.toCharArray()) {
-            try {
-                out.write((byte) c);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static void writeASCII (@NotNull String value, OutputStream out) throws IOException {
-        byte[] bytes = value.getBytes(StandardCharsets.US_ASCII);
-        writeInt(bytes.length, out);
-        out.write(bytes);
-
-        /*
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c < 0x80) {
-                out.write(c);
-            } else {
-                out.write(0xC0 | (c >> 6));
-                out.write(0x80 | (c & 0x3F));
-            }
-        }*/
     }
 
     public static void writeUTF8 (@NotNull String value, OutputStream out) throws IOException {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         writeInt(bytes.length, out);
         out.write(bytes);
-
-        /*
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c < 0x80) {
-                out.write(c);
-            } else if (c < 0x800) {
-                out.write(0xC0 | (c >> 6));
-                out.write(0x80 | (c & 0x3F));
-            } else if (c < 0xD800 || c >= 0xE000) {
-                out.write(0xE0 | (c >> 12));
-                out.write(0x80 | ((c >> 6) & 0x3F));
-                out.write(0x80 | (c & 0x3F));
-            } else {
-                if (i + 1 < value.length()) {
-                    char c2 = value.charAt(i + 1);
-                    if (c < 0xDC00 && c2 >= 0xDC00 && c2 < 0xE000) {
-                        c = (char) (0x10000 + ((c - 0xD800) << 10) + (c2 - 0xDC00));
-                        i++;
-                        out.write(0xF0 | (c >> 18));
-                        out.write(0x80 | ((c >> 12) & 0x3F));
-                        out.write(0x80 | ((c >> 6) & 0x3F));
-                        out.write(0x80 | (c & 0x3F));
-                    } else {
-                        throw new IllegalArgumentException("Malformed input around char " + i);
-                    }
-                } else {
-                    throw new IllegalArgumentException("Malformed input around char " + i);
-                }
-            }
-        }*/
-    }
-
-    public static void writeString (@NotNull String value, OutputStream out) throws IOException {
-        byte[] bytes = value.getBytes();
-        writeInt(bytes.length, out);
-        out.write(bytes);
-    }
-
-    @NotNull
-    public static String readString (InputStream in) throws IOException {
-        int length = readInt(in);
-        byte[] bytes = new byte[length];
-        in.read(bytes);
-        return new String(bytes);
-    }
-
-    @NotNull
-    public static String readASCII (@NotNull InputStream in) throws IOException {
-        int length = readInt(in);
-        byte [] bytes = new byte[length];
-        in.read(bytes);
-        return new String(bytes, StandardCharsets.US_ASCII);
     }
 
     @NotNull

@@ -51,16 +51,8 @@ public class LegacyOutput implements Closeable {
         IOStreamHelper.writeChar(value, this.output);
     }
 
-    public void writeString (@NotNull String value) throws IOException {
-        IOStreamHelper.writeString(value, this.output);
-    }
-
     public void writeUTF8 (@NotNull String value) throws IOException {
         IOStreamHelper.writeUTF8(value, this.output);
-    }
-
-    public void writeASCII (@NotNull String value) throws IOException {
-        IOStreamHelper.writeASCII(value, this.output);
     }
 
     public void writeBoolean (boolean value) throws IOException {

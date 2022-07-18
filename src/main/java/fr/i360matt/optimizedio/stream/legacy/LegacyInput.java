@@ -55,16 +55,8 @@ public class LegacyInput implements Closeable {
         return IOStreamHelper.readChar(this.input);
     }
 
-    public String readString () throws IOException {
-        return IOStreamHelper.readString(this.input);
-    }
-
     public String readUTF8 () throws IOException {
         return IOStreamHelper.readUTF8(this.input);
-    }
-
-    public String readASCII () throws IOException {
-        return IOStreamHelper.readASCII(this.input);
     }
 
     public boolean readBoolean () throws IOException {

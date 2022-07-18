@@ -94,16 +94,6 @@ public abstract class OptiOutput implements Closeable {
         incrIndex(IOType.CHAR_SIZE());
     }
 
-    public void writeString (@NotNull String value) {
-        checkIndex(IOType.INT_SIZE());
-        IOHelper.writeInt(value.length(), this.array, this.index);
-        incrIndex(IOType.INT_SIZE());
-
-        checkIndex(IOType.CHAR_SIZE() * value.length());
-        IOHelper.writeRawString(value, this.array, this.index);
-        incrIndex(IOType.CHAR_SIZE() * value.length());
-    }
-
     public void writeUTF8 (@NotNull String value) {
         int size = IOType.UTF8_SIZE(value);
         checkIndex(IOType.INT_SIZE());
@@ -112,17 +102,6 @@ public abstract class OptiOutput implements Closeable {
 
         checkIndex(size);
         IOHelper.writeRawUTF8(value, this.array, this.index);
-        incrIndex(size);
-    }
-
-    public void writeASCII (@NotNull String value) {
-        int size = IOType.ASCII_SIZE(value);
-        checkIndex(IOType.INT_SIZE());
-        IOHelper.writeInt(size, this.array, this.index);
-        incrIndex(IOType.INT_SIZE());
-
-        checkIndex(size);
-        IOHelper.writeRawASCII(value, this.array, this.index);
         incrIndex(size);
     }
 

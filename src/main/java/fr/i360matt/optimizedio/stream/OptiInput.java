@@ -87,17 +87,6 @@ public abstract class OptiInput implements Closeable {
         return value;
     }
 
-    public String readString () {
-        checkIndex(IOType.INT_SIZE());
-        int length = IOHelper.readInt(this.array, this.index);
-        incrIndex(IOType.INT_SIZE());
-
-        checkIndex(IOType.CHAR_SIZE() * length);
-        String str = IOHelper.readRawString(this.array, this.index, length);
-        incrIndex(IOType.CHAR_SIZE() * length);
-        return str;
-    }
-
     public String readUTF8 () {
         checkIndex(IOType.INT_SIZE());
         int length = IOHelper.readInt(this.array, this.index);
@@ -106,17 +95,6 @@ public abstract class OptiInput implements Closeable {
         checkIndex(length);
         String str = IOHelper.readRawUTF8(this.array, this.index, length);
         incrIndex(length);
-        return str;
-    }
-
-    public String readASCII () {
-        checkIndex(IOType.INT_SIZE());
-        int length = IOHelper.readInt(this.array, this.index);
-        incrIndex(IOType.INT_SIZE());
-
-        checkIndex(IOType.CHAR_SIZE() * length);
-        String str = IOHelper.readRawASCII(this.array, this.index, length);
-        incrIndex(IOType.CHAR_SIZE() * length);
         return str;
     }
 
